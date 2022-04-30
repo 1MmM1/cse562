@@ -19,10 +19,10 @@ public class FileOperations {
                     if (!path.exists()) {
                         path.mkdirs();
                     }
-                    File file = new File(dir, fname+"-acc.txt");
+                    File file = new File(dir, fname+"-lacc.txt");
                     BufferedWriter outfile = new BufferedWriter(new FileWriter(file,false));
-                    for (int i = 0; i < Constants.accx.size(); i++) {
-                        outfile.append(Constants.accx.get(i)+","+Constants.accy.get(i)+","+Constants.accz.get(i));
+                    for (int i = 0; i < Constants.laccx.size(); i++) {
+                        outfile.append(Constants.laccx.get(i)+","+Constants.laccy.get(i)+","+Constants.laccz.get(i));
                         outfile.newLine();
                     }
                     outfile.flush();
@@ -50,6 +50,15 @@ public class FileOperations {
                     outfile = new BufferedWriter(new FileWriter(file,false));
                     for (int i = 0; i < Constants.gyrox.size(); i++) {
                         outfile.append(Constants.gyrox.get(i)+","+Constants.gyroy.get(i)+","+Constants.gyroz.get(i));
+                        outfile.newLine();
+                    }
+                    outfile.flush();
+                    outfile.close();
+
+                    file = new File(dir, fname+"-acc.txt");
+                    outfile = new BufferedWriter(new FileWriter(file,false));
+                    for (int i = 0; i < Constants.accx.size(); i++) {
+                        outfile.append(Constants.accx.get(i)+","+Constants.accy.get(i)+","+Constants.accz.get(i));
                         outfile.newLine();
                     }
                     outfile.flush();
