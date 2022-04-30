@@ -25,8 +25,6 @@ public class Constants {
     static ArrayList<Float> accz;
 
     // Noise and bias
-    static double[] accNoise = new double[]{0.0157473606803277, 0.0128083180393274, 0.0529574344361893};
-    static double[] accBias = new double[]{-3.29440713783652e-05, -7.02731077950524e-05, -0.0500218994564540};
-    static double[] gyroNoise = new double[]{0.000211017604599978, 0.000237862667859705, 0.000210336681222121};
+    static double[] accBias = new double[]{0.0655831434092409, 0.00551829715174917, 9.77265714851485};
     static double[] gyroBias = new double[]{-4.30931844660195e-06, 1.20660916504854e-05, 4.30931844660190e-07};
 }
