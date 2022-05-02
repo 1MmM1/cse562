@@ -18,10 +18,12 @@ public class Constants {
     static ArrayList<Float> magy;
     static ArrayList<Float> magz;
     static ArrayList<Long> gyroTimestamps;
+    static ArrayList<Double> gyroTilts;
     static ArrayList<Float> gyrox;
     static ArrayList<Float> gyroy;
     static ArrayList<Float> gyroz;
     static ArrayList<Long> accTimestamps;
+    static ArrayList<Double> accTilts;
     static ArrayList<Float> accx;
     static ArrayList<Float> accy;
     static ArrayList<Float> accz;

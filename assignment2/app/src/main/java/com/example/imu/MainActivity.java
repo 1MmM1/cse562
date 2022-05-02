@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
+    private static final double ALPHA = 0.8;
+
     private SensorManager sensorManager;
     private Sensor gravitySensor;
     private TextView textView;
@@ -44,6 +46,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor acclerationSensor;
 
     private long startTime;
+
+    // assume tilt is never negative
+    private double gyroTilt = -1;
+    private double accTilt = -1;
+    private double cumGyroX = 0; // in radians
+    private double cumGyroY = 0; // in radians
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +121,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Constants.gyroTimestamps.add(startTime);
                 Constants.accTimestamps = new ArrayList<>();
                 Constants.accTimestamps.add(startTime);
+
+                Constants.gyroTilts = new ArrayList<>();
+                Constants.accTilts = new ArrayList<>();
             }
         });
         Constants.stopButton.setOnClickListener(new View.OnClickListener() {
@@ -136,9 +147,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (Constants.start) {
-            // assume tilt is never negative
-            double gyroTilt = -1;
-            double accTilt = -1;
             if (sensorEvent.sensor.equals(linearAcclerationSensor)) {
                 Constants.laccx.add(sensorEvent.values[0]);
                 Constants.laccy.add(sensorEvent.values[1]);
@@ -146,16 +154,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 //graphing logic
 //                graphData(sensorEvent.values);
-            } else if (sensorEvent.sensor.equals(gravitySensor)) {
+            }
+            if (sensorEvent.sensor.equals(gravitySensor)) {
                 Constants.gravx.add(sensorEvent.values[0]);
                 Constants.gravy.add(sensorEvent.values[1]);
                 Constants.gravz.add(sensorEvent.values[2]);
-            } else if (sensorEvent.sensor.equals(magnetSensor)) {
+            }
+            if (sensorEvent.sensor.equals(magnetSensor)) {
                 Constants.magx.add(sensorEvent.values[0]);
                 Constants.magy.add(sensorEvent.values[1]);
                 Constants.magz.add(sensorEvent.values[2]);
 //                graphData(sensorEvent.values);
-            } else if (sensorEvent.sensor.equals(gyroSensor)) {
+            }
+            if (sensorEvent.sensor.equals(gyroSensor)) {
                 long prevTime = Constants.gyroTimestamps.get(Constants.gyroTimestamps.size() - 1);
                 long currTime = System.currentTimeMillis();
                 Constants.gyroTimestamps.add(currTime);
@@ -167,14 +178,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                long durationMs = 200000; // delay for SENSOR_DELAY_NORMAL as specificied in documentation
                 long durationMs = prevTime - currTime;
                 double durationS = durationMs / 1000.0;
-                double angleX = Math.toDegrees((sensorEvent.values[0] - Constants.gyroBias[0]) * durationS);
-                double angleY = Math.toDegrees((sensorEvent.values[1] - Constants.gyroBias[1]) * durationS);
+                cumGyroX += sensorEvent.values[0];
+                cumGyroY += sensorEvent.values[1];
+                double angleX = Math.toDegrees((cumGyroX - Constants.gyroBias[0]) * durationS);
+                double angleY = Math.toDegrees((cumGyroY) * durationS);
 
                 gyroTilt = Math.sqrt(Math.pow(angleX, 2) + Math.pow(angleY, 2));
+                Constants.gyroTilts.add(gyroTilt);
                 Log.i("gyro_tilt", "" + gyroTilt);
 //                graphData(sensorEvent.values);
-                graphData(new float[]{0, (float) gyroTilt, 0});
-            } else {
+                graphData(new float[]{(float) angleX, (float) angleY, (float) Math.toDegrees((sensorEvent.values[2] - Constants.gyroBias[2]) * durationS)});
+//                graphData(new float[]{0, (float) gyroTilt, 0});
+            }
+            if (sensorEvent.sensor.equals(acclerationSensor)){
                 Constants.accx.add(sensorEvent.values[0]);
                 Constants.accy.add(sensorEvent.values[1]);
                 Constants.accz.add(sensorEvent.values[2]);
@@ -182,11 +198,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 accTilt = Math.acos((sensorEvent.values[2] - Constants.accBias[2]) / Math.sqrt(Math.pow(sensorEvent.values[0] - Constants.accBias[0], 2)
                         + Math.pow(sensorEvent.values[1] - Constants.accBias[1], 2) + Math.pow(sensorEvent.values[2] - Constants.accBias[2], 2)));
                 accTilt = Math.toDegrees(accTilt);
+                Constants.accTilts.add(accTilt);
                 Log.i("acc_tilt", "" + accTilt);
 //                graphData(sensorEvent.values);
 //                graphData(new float[]{(float) accTilt, 0, 0});
             }
 //            Log.e("log",String.format("%s %.2f %.2f %.2f",sensorEvent.sensor.getName(),sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]));
+//            if (gyroTilt > 0 && accTilt > 0) {
+//                graphData(new float[]{(float) accTilt, (float) gyroTilt, 0});
+//                accTilt = -1;
+//                gyroTilt = -1;
+//            }
         }
     }
 
