@@ -26,7 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
-    private static final double ALPHA = 0.8;
+    private static final double ALPHA = 0.98;
+    private static final int RAMP_UP_MS = 1000;
 
     private SensorManager sensorManager;
     private Sensor gravitySensor;
@@ -50,8 +51,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // assume tilt is never negative
     private double gyroTilt = -1;
     private double accTilt = -1;
+    private double instaGyroTilt = -1;
+    private double cumTilt = 0;
+
     private double cumGyroX = 0; // in radians
     private double cumGyroY = 0; // in radians
+    private double cumAccX = 0;
+    private double cumAccY = 0;
+    private double cumAccZ = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,48 +174,76 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                graphData(sensorEvent.values);
             }
             if (sensorEvent.sensor.equals(gyroSensor)) {
+                long durationMs = System.currentTimeMillis() - this.startTime;
+                if (durationMs >= RAMP_UP_MS && durationMs < RAMP_UP_MS * 2) {
+                    Constants.gyroBias[0] = cumGyroX / Constants.gyrox.size();
+                    Constants.gyroBias[1] = cumGyroY / Constants.gyroy.size();
+                }
                 long prevTime = Constants.gyroTimestamps.get(Constants.gyroTimestamps.size() - 1);
                 long currTime = System.currentTimeMillis();
+                float sensorX = sensorEvent.values[0];
+                float sensorY = sensorEvent.values[1];
+
                 Constants.gyroTimestamps.add(currTime);
-                Constants.gyrox.add(sensorEvent.values[0]);
-                Constants.gyroy.add(sensorEvent.values[1]);
+                Constants.gyrox.add(sensorX);
+                Constants.gyroy.add(sensorY);
                 Constants.gyroz.add(sensorEvent.values[2]);
 
 //                long durationMs = System.currentTimeMillis() - this.startTime;
 //                long durationMs = 200000; // delay for SENSOR_DELAY_NORMAL as specificied in documentation
-                long durationMs = prevTime - currTime;
-                double durationS = durationMs / 1000.0;
-                cumGyroX += sensorEvent.values[0];
-                cumGyroY += sensorEvent.values[1];
+                long gapDurationMs = prevTime - currTime;
+                double durationS = gapDurationMs / 1000.0;
+                cumGyroX += sensorX;
+                cumGyroY += sensorY;
                 double angleX = Math.toDegrees((cumGyroX - Constants.gyroBias[0]) * durationS);
-                double angleY = Math.toDegrees((cumGyroY) * durationS);
+                double angleY = Math.toDegrees((cumGyroY - Constants.gyroBias[1]) * durationS);
 
                 gyroTilt = Math.sqrt(Math.pow(angleX, 2) + Math.pow(angleY, 2));
                 Constants.gyroTilts.add(gyroTilt);
                 Log.i("gyro_tilt", "" + gyroTilt);
+
+                angleX = Math.toDegrees((sensorX - Constants.gyroBias[0]) * durationS);
+                angleY = Math.toDegrees((sensorY - Constants.gyroBias[1]) * durationS);
+                instaGyroTilt = Math.sqrt(Math.pow(angleX, 2) + Math.pow(angleY, 2));
+
 //                graphData(sensorEvent.values);
-                graphData(new float[]{(float) angleX, (float) angleY, (float) Math.toDegrees((sensorEvent.values[2] - Constants.gyroBias[2]) * durationS)});
+//                graphData(new float[]{(float) angleX, (float) angleY, (float) Math.toDegrees((sensorEvent.values[2] - Constants.gyroBias[2]) * durationS)});
 //                graphData(new float[]{0, (float) gyroTilt, 0});
             }
             if (sensorEvent.sensor.equals(acclerationSensor)){
-                Constants.accx.add(sensorEvent.values[0]);
-                Constants.accy.add(sensorEvent.values[1]);
-                Constants.accz.add(sensorEvent.values[2]);
+                long durationMs = System.currentTimeMillis() - this.startTime;
+                if (durationMs >= RAMP_UP_MS && durationMs < RAMP_UP_MS * 2) {
+                    Constants.accBias[0] = cumAccX / Constants.accx.size();
+                    Constants.accBias[1] = cumAccY / Constants.accy.size();
+                    Constants.accBias[2] = cumAccZ / Constants.accz.size();
+                }
+                float sensorX = sensorEvent.values[0] / 9.81f;
+                float sensorY = sensorEvent.values[1] / 9.81f;
+                float sensorZ = sensorEvent.values[2] / 9.81f;
+                Constants.accx.add(sensorX);
+                Constants.accy.add(sensorY);
+                Constants.accz.add(sensorZ);
+                cumAccX += sensorX;
+                cumAccY += sensorY;
+                cumAccZ += sensorZ;
 //                accTilt = Math.acos(sensorEvent.values[2] / Math.sqrt(Math.pow(sensorEvent.values[0], 2) + Math.pow(sensorEvent.values[1], 2) + Math.pow(sensorEvent.values[2], 2)));
-                accTilt = Math.acos((sensorEvent.values[2] - Constants.accBias[2]) / Math.sqrt(Math.pow(sensorEvent.values[0] - Constants.accBias[0], 2)
-                        + Math.pow(sensorEvent.values[1] - Constants.accBias[1], 2) + Math.pow(sensorEvent.values[2] - Constants.accBias[2], 2)));
+                double denom = Math.sqrt(Math.pow(sensorX, 2) + Math.pow(sensorY, 2) + Math.pow(sensorZ, 2));
+//                Log.i("acc_denom", "" + denom);
+                accTilt = Math.acos((sensorZ) / denom);
                 accTilt = Math.toDegrees(accTilt);
                 Constants.accTilts.add(accTilt);
-                Log.i("acc_tilt", "" + accTilt);
+//                Log.i("acc_tilt", "" + accTilt);
 //                graphData(sensorEvent.values);
 //                graphData(new float[]{(float) accTilt, 0, 0});
             }
 //            Log.e("log",String.format("%s %.2f %.2f %.2f",sensorEvent.sensor.getName(),sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]));
-//            if (gyroTilt > 0 && accTilt > 0) {
-//                graphData(new float[]{(float) accTilt, (float) gyroTilt, 0});
-//                accTilt = -1;
-//                gyroTilt = -1;
-//            }
+            if (gyroTilt > 0 && accTilt > 0 && instaGyroTilt > 0) {
+                cumTilt = ALPHA * (cumTilt + instaGyroTilt) + (1 - ALPHA) * accTilt;
+                graphData(new float[]{(float) accTilt, (float) gyroTilt, (float) cumTilt});
+                accTilt = -1;
+                gyroTilt = -1;
+                instaGyroTilt = -1;
+            }
         }
     }
 
