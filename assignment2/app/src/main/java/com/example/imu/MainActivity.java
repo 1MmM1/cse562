@@ -28,9 +28,9 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
     private static final double ALPHA = 0.98;
     private static final int RAMP_UP_MS = 1000;
+    private static final double NS2S = 1.0 / 1000000000.0;
 
     private SensorManager sensorManager;
-    private Sensor gravitySensor;
     private TextView textView;
     private Sensor linearAcclerationSensor;
     private LineChart lineChart;
@@ -42,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     int lim = 500;
     Activity av;
 
-    private Sensor magnetSensor;
     private Sensor gyroSensor;
     private Sensor acclerationSensor;
 
@@ -53,6 +52,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private double accTilt = -1;
     private double instaGyroTilt = -1;
     private double cumTilt = 0;
+    private boolean validAcc = false;
+    private boolean validGyro = false;
+    private boolean validInstaGyro = false;
 
     private double cumGyroX = 0; // in radians
     private double cumGyroY = 0; // in radians
@@ -81,20 +83,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // defining sensors
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
-        sensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         linearAcclerationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorManager.registerListener(this, linearAcclerationSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
-        magnetSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        sensorManager.registerListener(this, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
-
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         acclerationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorManager.registerListener(this, acclerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, acclerationSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         // on click listeners
         Constants.startButton.setOnClickListener(new View.OnClickListener() {
@@ -103,12 +100,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Constants.laccx = new ArrayList<>();
                 Constants.laccy = new ArrayList<>();
                 Constants.laccz = new ArrayList<>();
-                Constants.gravx = new ArrayList<>();
-                Constants.gravy = new ArrayList<>();
-                Constants.gravz = new ArrayList<>();
-                Constants.magx = new ArrayList<>();
-                Constants.magy = new ArrayList<>();
-                Constants.magz = new ArrayList<>();
                 Constants.gyrox = new ArrayList<>();
                 Constants.gyroy = new ArrayList<>();
                 Constants.gyroz = new ArrayList<>();
@@ -162,49 +153,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 //graphing logic
 //                graphData(sensorEvent.values);
             }
-            if (sensorEvent.sensor.equals(gravitySensor)) {
-                Constants.gravx.add(sensorEvent.values[0]);
-                Constants.gravy.add(sensorEvent.values[1]);
-                Constants.gravz.add(sensorEvent.values[2]);
-            }
-            if (sensorEvent.sensor.equals(magnetSensor)) {
-                Constants.magx.add(sensorEvent.values[0]);
-                Constants.magy.add(sensorEvent.values[1]);
-                Constants.magz.add(sensorEvent.values[2]);
-//                graphData(sensorEvent.values);
-            }
             if (sensorEvent.sensor.equals(gyroSensor)) {
                 long durationMs = System.currentTimeMillis() - this.startTime;
-                if (durationMs >= RAMP_UP_MS && durationMs < RAMP_UP_MS * 2) {
+                if (Constants.gyrox.size() == 100) {
                     Constants.gyroBias[0] = cumGyroX / Constants.gyrox.size();
                     Constants.gyroBias[1] = cumGyroY / Constants.gyroy.size();
                 }
+//                double ts = sensorEvent.timestamp;
+//                double dT = ((ts - timestamp)*NS2S);
+//                timestamp=ts;
                 long prevTime = Constants.gyroTimestamps.get(Constants.gyroTimestamps.size() - 1);
-                long currTime = System.currentTimeMillis();
+                long currTime = sensorEvent.timestamp;
                 float sensorX = sensorEvent.values[0];
                 float sensorY = sensorEvent.values[1];
 
-                Constants.gyroTimestamps.add(currTime);
+                Constants.gyroTimestamps.add(currTime); // now in nanoseconds
                 Constants.gyrox.add(sensorX);
                 Constants.gyroy.add(sensorY);
                 Constants.gyroz.add(sensorEvent.values[2]);
 
 //                long durationMs = System.currentTimeMillis() - this.startTime;
 //                long durationMs = 200000; // delay for SENSOR_DELAY_NORMAL as specificied in documentation
-                long gapDurationMs = prevTime - currTime;
-                double durationS = gapDurationMs / 1000.0;
+                long gapDurationMs = prevTime - currTime; // now in nanoseconds
+                double durationS = gapDurationMs * NS2S;
                 cumGyroX += sensorX;
                 cumGyroY += sensorY;
-                double angleX = Math.toDegrees((cumGyroX - Constants.gyroBias[0]) * durationS);
-                double angleY = Math.toDegrees((cumGyroY - Constants.gyroBias[1]) * durationS);
+                double angleX = Math.toDegrees((cumGyroX) * durationS);
+                double angleY = Math.toDegrees((cumGyroY) * durationS);
 
                 gyroTilt = Math.sqrt(Math.pow(angleX, 2) + Math.pow(angleY, 2));
+                validGyro = true;
                 Constants.gyroTilts.add(gyroTilt);
                 Log.i("gyro_tilt", "" + gyroTilt);
 
-                angleX = Math.toDegrees((sensorX - Constants.gyroBias[0]) * durationS);
-                angleY = Math.toDegrees((sensorY - Constants.gyroBias[1]) * durationS);
+                // instantaneous calculation for the complemenatry filter
+                angleX = Math.toDegrees((sensorX) * durationS);
+                angleY = Math.toDegrees((sensorY) * durationS);
                 instaGyroTilt = Math.sqrt(Math.pow(angleX, 2) + Math.pow(angleY, 2));
+                validInstaGyro = true;
+                Log.i("gyro_tilt_instant", "" + instaGyroTilt);
 
 //                graphData(sensorEvent.values);
 //                graphData(new float[]{(float) angleX, (float) angleY, (float) Math.toDegrees((sensorEvent.values[2] - Constants.gyroBias[2]) * durationS)});
@@ -231,18 +218,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                Log.i("acc_denom", "" + denom);
                 accTilt = Math.acos((sensorZ) / denom);
                 accTilt = Math.toDegrees(accTilt);
+                validAcc = true;
                 Constants.accTilts.add(accTilt);
 //                Log.i("acc_tilt", "" + accTilt);
 //                graphData(sensorEvent.values);
 //                graphData(new float[]{(float) accTilt, 0, 0});
             }
 //            Log.e("log",String.format("%s %.2f %.2f %.2f",sensorEvent.sensor.getName(),sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]));
-            if (gyroTilt > 0 && accTilt > 0 && instaGyroTilt > 0) {
+            if (validAcc && validGyro && validInstaGyro) {
                 cumTilt = ALPHA * (cumTilt + instaGyroTilt) + (1 - ALPHA) * accTilt;
                 graphData(new float[]{(float) accTilt, (float) gyroTilt, (float) cumTilt});
-                accTilt = -1;
-                gyroTilt = -1;
-                instaGyroTilt = -1;
+//                accTilt = -1;
+//                gyroTilt = -1;
+//                instaGyroTilt = -1;
+                validAcc = false;
+                validGyro = false;
+                validInstaGyro = false;
             }
         }
     }
@@ -280,11 +271,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_FASTEST);
         sensorManager.registerListener(this, linearAcclerationSensor, SensorManager.SENSOR_DELAY_FASTEST);
-        sensorManager.registerListener(this, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, acclerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, acclerationSensor, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     protected void onPause() {

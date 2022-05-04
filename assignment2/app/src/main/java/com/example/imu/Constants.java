@@ -11,12 +11,6 @@ public class Constants {
     static ArrayList<Float> laccx;
     static ArrayList<Float> laccy;
     static ArrayList<Float> laccz;
-    static ArrayList<Float> gravx;
-    static ArrayList<Float> gravy;
-    static ArrayList<Float> gravz;
-    static ArrayList<Float> magx;
-    static ArrayList<Float> magy;
-    static ArrayList<Float> magz;
     static ArrayList<Long> gyroTimestamps;
     static ArrayList<Double> gyroTilts;
     static ArrayList<Float> gyrox;
