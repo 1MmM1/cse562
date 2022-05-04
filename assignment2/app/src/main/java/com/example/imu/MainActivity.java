@@ -171,15 +171,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                graphData(new float[]{0, (float) gyroTilt, 0});
             }
             if (sensorEvent.sensor.equals(acclerationSensor)){
-                float sensorX = sensorEvent.values[0] / 9.81f;
-                float sensorY = sensorEvent.values[1] / 9.81f;
-                float sensorZ = sensorEvent.values[2] / 9.81f;
+                float sensorX = sensorEvent.values[0];
+                float sensorY = sensorEvent.values[1];
+                float sensorZ = sensorEvent.values[2];
                 Constants.accx.add(sensorX);
                 Constants.accy.add(sensorY);
                 Constants.accz.add(sensorZ);
 
-                double denom = Math.sqrt(Math.pow(sensorX, 2) + Math.pow(sensorY, 2) + Math.pow(sensorZ, 2));
-                accTilt = Math.acos((sensorZ) / denom);
+                double denom = Math.sqrt(Math.pow(sensorX / 9.81f, 2) + Math.pow(sensorY / 9.81f, 2) + Math.pow(sensorZ / 9.81f, 2));
+                accTilt = Math.acos((sensorZ / 9.81f) / denom);
                 accTilt = Math.toDegrees(accTilt);
                 validAcc = true;
                 Constants.accTilts.add(accTilt);
@@ -187,7 +187,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             if (validAcc && validGyro && validInstaGyro) {
                 cumTilt = ALPHA * (cumTilt + instaGyroTilt) + (1 - ALPHA) * accTilt;
-                graphData(new float[]{(float) accTilt, (float) gyroTilt, (float) cumTilt});
+//                graphData(new float[]{(float) accTilt, (float) gyroTilt, (float) cumTilt});
+                graphData(new float[]{0, 0, (float) cumTilt});
                 validAcc = false;
                 validGyro = false;
                 validInstaGyro = false;
