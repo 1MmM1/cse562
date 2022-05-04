@@ -8,9 +8,6 @@ public class Constants {
     static Button startButton;
     static Button stopButton;
     static boolean start = false;
-    static ArrayList<Float> laccx;
-    static ArrayList<Float> laccy;
-    static ArrayList<Float> laccz;
     static ArrayList<Long> gyroTimestamps;
     static ArrayList<Double> gyroTilts;
     static ArrayList<Float> gyrox;
@@ -23,6 +20,5 @@ public class Constants {
     static ArrayList<Float> accz;
 
     // Noise and bias
-    static double[] accBias = new double[]{-3.29440713783652e-05, -7.02731077950524e-05, -0.0500218994564540};
     static double[] gyroBias = new double[]{-4.30931844660195e-06, 1.20660916504854e-05, 4.30931844660190e-07};
 }
