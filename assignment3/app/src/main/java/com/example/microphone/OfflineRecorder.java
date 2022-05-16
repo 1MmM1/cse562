@@ -83,14 +83,17 @@ public class OfflineRecorder extends Thread {
             float currFreq = i*freqSpacing;
             lineData.add(new Entry(currFreq, (float) out[i]));
             // TODO: also constrain decibals higher than speaking range
-            if (out[i] > Constants.threshold && (currFreq < Constants.frequency - 200 ||  currFreq > Constants.frequency + 200)) {
+            if (out[i] > Constants.threshold && (currFreq < Constants.frequency - 100 ||  currFreq > Constants.frequency + 100)
+                    && currFreq > Constants.frequency - 1000 && currFreq < Constants.frequency + 1000) {
                 // detect a gesture
                 if (currFreq < Constants.frequency) {
                     // pull back
-                    Constants.classificationTv.setText("Pull");
+//                    Constants.classificationTv.setText("Pull");
+                    Log.i("OfflineRecorder", "pull");
                 } else {
                     // push forward
-                    Constants.classificationTv.setText("Push");
+//                    Constants.classificationTv.setText("Push");
+                    Log.i("OfflineRecorder", "push");
                 }
             }
         }

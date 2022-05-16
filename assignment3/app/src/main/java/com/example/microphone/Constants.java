@@ -12,7 +12,7 @@ public class Constants {
     static TextView classificationTv;
     static LineChart lineChart;
     static double frequency;
-    static double threshold = 90; // amplitude
+    static double threshold = 70; // amplitude
     static short[] samples;
     static short[] temp;
 }
