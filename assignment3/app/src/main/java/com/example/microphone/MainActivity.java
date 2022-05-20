@@ -84,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
 
         editTextNumber = (EditText)findViewById(R.id.editTextNumber);
         Constants.volEt = (EditText)findViewById(R.id.editTextNumber2);
-        Constants.classificationTv = (TextView) findViewById(R.id.classification);
 
         freq=Integer.parseInt(editTextNumber.getText().toString());
         editTextNumber.addTextChangedListener(new TextWatcher() {

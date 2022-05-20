@@ -39,6 +39,7 @@ public class OfflineRecorder extends Thread {
         this.fs = fs;
         this.freq = freq;
         this.av = av;
+        this.lastTime = System.currentTimeMillis();
 
         minbuffersize = AudioRecord.getMinBufferSize(
                 fs,
@@ -92,28 +93,21 @@ public class OfflineRecorder extends Thread {
             long timestamp = System.currentTimeMillis();
             if (out[i] > Constants.threshold && (currFreq < Constants.frequency - 150 ||  currFreq > Constants.frequency + 150)
                     && currFreq > Constants.frequency - 1100 && currFreq < Constants.frequency + 1100 && timestamp - lastTime > 1000) {
-                // detect a gesture
-                // TODO: make sure there is some minimum separation between detections (1s). focus on sharp movements
-                // this logic is correct
                 lastTime = timestamp;
                 if (currFreq < Constants.frequency) {
                     // pull back
-//                    Constants.classificationTv.setText("Pull");
                     av.runOnUiThread(new Thread() {
                         @Override
                         public void run() {
-                            // put UI stuff in here such as toast
                             Toast.makeText(context, "pull", Toast.LENGTH_SHORT).show();
                         }
                     });
                     Log.i("OfflineRecorder", "pull");
                 } else {
                     // push forward
-//                    Constants.classificationTv.setText("Push");
                     av.runOnUiThread(new Thread() {
                         @Override
                         public void run() {
-                            // put UI stuff in here such as toast
                             Toast.makeText(context, "push", Toast.LENGTH_SHORT).show();
                         }
                     });
