@@ -1,5 +1,6 @@
 package com.example.microphone;
 
+import android.app.Activity;
 import android.content.Context;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
@@ -10,12 +11,14 @@ public class Worker  extends AsyncTask<Void, Void, Void> {
     Context context;
     int fs;
     String fname;
+    Activity av;
 
-    public Worker(Context context, int freq, int fs, String fname) {
+    public Worker(Context context, int freq, int fs, String fname, Activity av) {
         this.freq = freq;
         this.context = context;
         this.fs = fs;
         this.fname = fname;
+        this.av = av;
     }
 
     @Override
@@ -30,7 +33,7 @@ public class Worker  extends AsyncTask<Void, Void, Void> {
         int recTime = 20; // in seconds
         short[] tone = Tone.generateTone(freq,1,fs);
 
-        OfflineRecorder rec = new OfflineRecorder(MediaRecorder.AudioSource.DEFAULT,fs,fs*recTime, context, fname, freq);
+        OfflineRecorder rec = new OfflineRecorder(MediaRecorder.AudioSource.DEFAULT,fs,fs*recTime, context, av, fname, freq);
         rec.start();
 
         AudioSpeaker speaker = new AudioSpeaker(context, tone, fs);

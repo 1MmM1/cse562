@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
                 closeKeyboard();
-                task = new Worker(av,freq,48000,fname);
+                task = new Worker(av,freq,48000,fname, av);
                 task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 Constants.startButton.setEnabled(false);
                 Constants.stopButton.setEnabled(true);

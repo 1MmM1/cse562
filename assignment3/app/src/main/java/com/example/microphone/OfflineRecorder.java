@@ -1,12 +1,15 @@
 package com.example.microphone;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.util.Log;
+import android.widget.Toast;
 
+import androidx.annotation.UiThread;
 import androidx.core.app.ActivityCompat;
 
 import com.github.mikephil.charting.data.Entry;
@@ -27,12 +30,15 @@ public class OfflineRecorder extends Thread {
     String filename;
     int fs;
     int freq;
+    Activity av;
+    long lastTime;
 
-    public OfflineRecorder(int microphone, int fs, int bufferLen, Context context, String filename, int freq) {
+    public OfflineRecorder(int microphone, int fs, int bufferLen, Context context, Activity av, String filename, int freq) {
         this.context = context;
         this.filename = filename;
         this.fs = fs;
         this.freq = freq;
+        this.av = av;
 
         minbuffersize = AudioRecord.getMinBufferSize(
                 fs,
@@ -83,16 +89,34 @@ public class OfflineRecorder extends Thread {
             float currFreq = i*freqSpacing;
             lineData.add(new Entry(currFreq, (float) out[i]));
             // TODO: also constrain decibals higher than speaking range
-            if (out[i] > Constants.threshold && (currFreq < Constants.frequency - 100 ||  currFreq > Constants.frequency + 100)
-                    && currFreq > Constants.frequency - 1000 && currFreq < Constants.frequency + 1000) {
+            long timestamp = System.currentTimeMillis();
+            if (out[i] > Constants.threshold && (currFreq < Constants.frequency - 150 ||  currFreq > Constants.frequency + 150)
+                    && currFreq > Constants.frequency - 1100 && currFreq < Constants.frequency + 1100 && timestamp - lastTime > 1000) {
                 // detect a gesture
+                // TODO: make sure there is some minimum separation between detections (1s). focus on sharp movements
+                // this logic is correct
+                lastTime = timestamp;
                 if (currFreq < Constants.frequency) {
                     // pull back
 //                    Constants.classificationTv.setText("Pull");
+                    av.runOnUiThread(new Thread() {
+                        @Override
+                        public void run() {
+                            // put UI stuff in here such as toast
+                            Toast.makeText(context, "pull", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                     Log.i("OfflineRecorder", "pull");
                 } else {
                     // push forward
 //                    Constants.classificationTv.setText("Push");
+                    av.runOnUiThread(new Thread() {
+                        @Override
+                        public void run() {
+                            // put UI stuff in here such as toast
+                            Toast.makeText(context, "push", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                     Log.i("OfflineRecorder", "push");
                 }
             }
